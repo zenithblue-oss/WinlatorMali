@@ -85,7 +85,7 @@ android {
     namespace 'com.winlator.cmod'
     // Keep compileSdk from your current config. If you want to match Termux-X11, you could set to 34.
     compileSdk 34
-    buildToolsVersion "35.0.0"
+    buildToolsVersion "37.0.0"
 
     defaultConfig {
         applicationId "com.winlator.cmod"
@@ -181,7 +181,7 @@ android {
     }
 
 
-    ndkVersion '29.0.14206865'
+    ndkVersion '30.0.14904198'
 
     externalNativeBuild {
         cmake {
