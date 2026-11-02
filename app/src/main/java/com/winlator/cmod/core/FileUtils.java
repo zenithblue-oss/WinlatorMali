@@ -337,7 +337,8 @@ public abstract class FileUtils {
         if (path == null) return "";
         path = StringUtils.removeEndSlash(path);
         int index = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
-        return path.substring(0, index);
+        // No separator (e.g. a shortcut whose .desktop file is gone has an empty path): no directory part.
+        return index < 0 ? "" : path.substring(0, index);
     }
 
     public static void chmod(File file, int mode) {
