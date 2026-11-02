@@ -282,6 +282,7 @@ public class GraphicsDriverConfigDialog extends ContentDialog {
             for (View v : new View[]{sVulkanVersion, sVersion, mscAvailableExtensions, sGPUName, sMaxDeviceMemory, sResourceType}) {
                 ViewGroup parent = (ViewGroup) v.getParent();
                 int index = parent.indexOfChild(v);
+                // Assumes graphics_driver_config_dialog.xml keeps each (id-less) label TextView directly before its control.
                 if (index > 0) parent.getChildAt(index - 1).setVisibility(View.GONE);
                 v.setVisibility(View.GONE);
             }

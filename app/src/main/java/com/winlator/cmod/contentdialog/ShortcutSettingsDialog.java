@@ -28,6 +28,7 @@ import com.winlator.cmod.ContainerDetailFragment;
 import com.winlator.cmod.R;
 import com.winlator.cmod.ShortcutsFragment;
 import com.winlator.cmod.box64.Box64PresetManager;
+import com.winlator.cmod.container.Container;
 import com.winlator.cmod.container.ContainerManager;
 import com.winlator.cmod.container.Shortcut;
 import com.winlator.cmod.contents.ContentProfile;
@@ -647,6 +648,11 @@ public class ShortcutSettingsDialog extends ContentDialog {
             vGraphicsDriverConfig.setOnClickListener((v) -> {
                 new GraphicsDriverConfigDialog(vGraphicsDriverConfig, graphicsDriver, tvGraphicsDriverVersion).show();
             });
+
+            // PanVK loads no BCn layer, so its config row is hidden.
+            int bcnVisibility = Container.isPanVK(graphicsDriver) ? View.GONE : View.VISIBLE;
+            findViewById(R.id.TVBCNConfigLabel).setVisibility(bcnVisibility);
+            findViewById(R.id.LLBCNConfigRow).setVisibility(bcnVisibility);
 
             ArrayList<String> items = new ArrayList<>();
             for (String value : dxwrapperEntries) {

@@ -2388,11 +2388,13 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
         }
 
         // PanVK runs alone: no BCn layer, no adrenotools, no WRAPPER_* settings; only the Mesa WSI options apply.
-        // A BCn layer manifest from an earlier launch stays in implicit_layer.d; DISABLE_BCN_COMPUTE keeps it unloaded.
+        // A BCn layer manifest from an earlier launch stays in implicit_layer.d; DISABLE_BCN_COMPUTE keeps it unloaded,
+        // and VK_LOADER_LAYERS_DISABLE skips every implicit layer. Container/shortcut env vars are merged later and can override.
         if (panVK) {
             envVars.put("MESA_VK_WSI_PRESENT_MODE", graphicsDriverConfig.getOrDefault("presentMode", "mailbox"));
             if ("1".equals(graphicsDriverConfig.get("syncFrame"))) envVars.put("MESA_VK_WSI_DEBUG", "forcesync");
             envVars.put("DISABLE_BCN_COMPUTE", "1");
+            envVars.put("VK_LOADER_LAYERS_DISABLE", "~implicit~");
             return;
         }
 

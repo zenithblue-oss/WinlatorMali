@@ -832,6 +832,14 @@ public class ContainerDetailFragment extends Fragment {
                 dialog.show();
             });
             vGraphicsDriverConfig.setVisibility(View.VISIBLE);
+
+            // PanVK loads no BCn layer, so its config row is hidden.
+            int bcnVisibility = Container.isPanVK(graphicsDriver) ? View.GONE : View.VISIBLE;
+            View root = vGraphicsDriverConfig.getRootView();
+            for (int id : new int[]{R.id.TVBCNConfigLabel, R.id.LLBCNConfigRow}) {
+                View v = root.findViewById(id);
+                if (v != null) v.setVisibility(bcnVisibility);
+            }
         };
 
         sGraphicsDriver.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
