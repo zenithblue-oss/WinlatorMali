@@ -60,6 +60,7 @@ public class MITSHMExtension implements Extension {
             outputStream.writeShort((short)0);
             outputStream.writeShort((short)0);
             outputStream.writeByte((byte)0);
+            outputStream.writePad(15); // replies are 32 bytes; at 17, xcb (Mesa X11 sw WSI) waited forever for the rest
         }
     }
 
