@@ -41,9 +41,11 @@ public abstract class AtomRequests {
             outputStream.writeByte(RESPONSE_CODE_SUCCESS);
             outputStream.writeByte((byte)0);
             outputStream.writeShort(client.getSequenceNumber());
-            outputStream.writeInt((length + 22) / 4);
-            outputStream.writeString8(name);
+            // X11 GetAtomName: length = padded name / 4, then CARD16 name length, 22 pad, then the name.
+            outputStream.writeInt((length + (-length & 3)) / 4);
+            outputStream.writeShort(length);
             outputStream.writePad(22);
+            outputStream.writeString8(name);
         }
     }
 }
