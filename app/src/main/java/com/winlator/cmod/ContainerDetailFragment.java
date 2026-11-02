@@ -649,6 +649,14 @@ public class ContainerDetailFragment extends Fragment {
                     }
                     data.put("desktopTheme", desktopTheme);
                     data.put("wineVersion", selectedWine);
+                    // PanVK on ARM64EC Wine: PanPlay's DXVK, unless the user picked a version other than the default.
+                    if (Container.isPanVK(graphicsDriver) && WineInfo.fromIdentifier(context, contentsManager, selectedWine).isArm64EC()) {
+                        KeyValueSet dxConfig = DXVKConfigDialog.parseConfig(dxwrapperConfig);
+                        if (DefaultVersion.DXVK.equals(dxConfig.get("version"))) {
+                            dxConfig.put("version", DefaultVersion.DXVK_PANVK_ARM64EC);
+                            data.put("dxwrapperConfig", dxConfig.toString());
+                        }
+                    }
                     data.put("midiSoundFont", midiSoundFont);
                     data.put("lc_all", lc_all);
 

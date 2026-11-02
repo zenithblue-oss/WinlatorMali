@@ -76,6 +76,7 @@
         <item>1.11.1-sarek</item>
         <item>1.12.1-sarek</item>
         <item>v2.3.1-stripped</item>
+        <item>3.1.1-arm64ec</item>
     </string-array>
     <string-array name="dxvk_max_device_memory_entries">
         <item>0 (Default)</item>
@@ -145,6 +146,7 @@
         <item>0.3.7</item>
     </string-array>
     <string-array name="wowbox64_version_entries">
+        <item>0.4.5</item>
         <item>0.4.3</item>
         <item>0.3.7</item>
     </string-array>

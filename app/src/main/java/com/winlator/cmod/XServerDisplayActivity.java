@@ -2395,6 +2395,12 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
             if ("1".equals(graphicsDriverConfig.get("syncFrame"))) envVars.put("MESA_VK_WSI_DEBUG", "forcesync");
             envVars.put("DISABLE_BCN_COMPUTE", "1");
             envVars.put("VK_LOADER_LAYERS_DISABLE", "~implicit~");
+            // As PanPlay: keep 32-bit DXVK pipeline libraries (else 1-1.6 s recompiles on dxvk-cs at first draw),
+            // and keep compiled shaders across sessions in Mesa's disk cache (off by default on Android).
+            envVars.put("DXVK_CONFIG", "dxvk.trackPipelineLifetime = False");
+            envVars.put("MESA_SHADER_CACHE_DIR", rootDir + "/" + ImageFs.CACHE_PATH);
+            envVars.put("MESA_SHADER_CACHE_DISABLE", "false");
+            envVars.put("MESA_SHADER_CACHE_MAX_SIZE", "1G");
             return;
         }
 
