@@ -482,9 +482,22 @@ public class GuestProgramLauncherComponent extends EnvironmentComponent {
             this.envVars.remove("MANGOHUD_CONFIG");
         }
 
+        boolean panVK = Container.isPanVK(shortcut != null ? shortcut.getExtra("graphicsDriver", container.getGraphicsDriver()) : container.getGraphicsDriver());
+        // PanVK: no layer search paths (user env below may still set VK_LAYER_PATH).
+        if (panVK) execEnvVars.remove("VK_LAYER_PATH");
+
         // Merge any additional environment variables from external sources
         if (this.envVars != null) {
             execEnvVars.putAll(this.envVars);
+        }
+
+        // PanVK loads no wrapper, so drop every WRAPPER_* (incl. the container defaults) and the
+        // VK_INSTANCE_LAYERS that EnvVarsView hides from the user.
+        if (panVK) {
+            ArrayList<String> wrapperVars = new ArrayList<>();
+            for (String name : execEnvVars) if (name.startsWith("WRAPPER_")) wrapperVars.add(name);
+            for (String name : wrapperVars) execEnvVars.remove(name);
+            execEnvVars.remove("VK_INSTANCE_LAYERS");
         }
 
         String emulator = container.getEmulator();

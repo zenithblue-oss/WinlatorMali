@@ -119,6 +119,7 @@ public class ManageGraphicsDriversFragment extends Fragment {
             driverList.clear();
             for (String wrapper : com.winlator.cmod.container.Container.WRAPPER_DRIVERS)
                 driverList.add(new DriverInfo(wrapper + ".tzst"));
+            driverList.add(new DriverInfo(com.winlator.cmod.container.Container.PANVK_DRIVER + ".tzst"));
             driverList.add(new DriverInfo("leegao_bcn.tzst"));
             driverList.add(new DriverInfo("leegao_bcn_legacy.tzst"));
             driverList.add(new DriverInfo("gladio-1.1.tzst"));

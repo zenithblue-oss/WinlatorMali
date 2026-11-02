@@ -2344,7 +2344,9 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
             envVars.put("MESA_VK_WSI_DEBUG", "sw");
         }
 
-        envVars.put("VK_ICD_FILENAMES", imageFs.getShareDir() + "/vulkan/icd.d/wrapper_icd.aarch64.json");
+        boolean panVK = Container.isPanVK(graphicsDriver);
+        // Only this ICD is loaded (the loader skips its icd.d scan), so a wrapper json left by an earlier launch is ignored.
+        envVars.put("VK_ICD_FILENAMES", imageFs.getShareDir() + "/vulkan/icd.d/" + (panVK ? "panvk_icd.aarch64.json" : "wrapper_icd.aarch64.json"));
         envVars.put("GLADIO_NO_ERROR", "1");
 
         Log.d("XServerDisplayActivity", "Extracting graphics driver files");
@@ -2383,6 +2385,15 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
             File internalExtraLibs = new File(getFilesDir(), "graphics_driver/extra_libs.tzst");
             if (internalExtraLibs.exists()) TarCompressorUtils.extract(TarCompressorUtils.Type.ZSTD, internalExtraLibs, rootDir);
             else TarCompressorUtils.extract(TarCompressorUtils.Type.ZSTD, this, "graphics_driver/extra_libs.tzst", rootDir);
+        }
+
+        // PanVK runs alone: no BCn layer, no adrenotools, no WRAPPER_* settings; only the Mesa WSI options apply.
+        // A BCn layer manifest from an earlier launch stays in implicit_layer.d; DISABLE_BCN_COMPUTE keeps it unloaded.
+        if (panVK) {
+            envVars.put("MESA_VK_WSI_PRESENT_MODE", graphicsDriverConfig.getOrDefault("presentMode", "mailbox"));
+            if ("1".equals(graphicsDriverConfig.get("syncFrame"))) envVars.put("MESA_VK_WSI_DEBUG", "forcesync");
+            envVars.put("DISABLE_BCN_COMPUTE", "1");
+            return;
         }
 
         // The leegao BCn layer, extracted on every launch: both builds install as the same layer (same .so and

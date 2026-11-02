@@ -30,8 +30,15 @@ public class Container {
     // 1.1 release offered. All install as the same ICD (libvulkan_wrapper.so), so one is chosen per container/shortcut.
     public static final String[] WRAPPER_DRIVERS = {"wrapper", "wrapper-1.1", "wrapper-v2", "wrapper-leegao", "wrapper-gamenative"};
 
+    // Mesa PanVK (assets/graphics_driver/panvk.tzst), loaded as the only ICD: no wrapper, adrenotools or BCn layer.
+    public static final String PANVK_DRIVER = "panvk";
+
+    public static boolean isPanVK(String graphicsDriver) {
+        return PANVK_DRIVER.equals(graphicsDriver);
+    }
+
     public static boolean isSupportedGraphicsDriver(String graphicsDriver) {
-        return graphicsDriver != null && java.util.Arrays.asList(WRAPPER_DRIVERS).contains(graphicsDriver);
+        return graphicsDriver != null && (java.util.Arrays.asList(WRAPPER_DRIVERS).contains(graphicsDriver) || isPanVK(graphicsDriver));
     }
     public static final String DEFAULT_AUDIO_DRIVER = "pulseaudio-gn";
     public static final String DEFAULT_EMULATOR = "FEXCore";

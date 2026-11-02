@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Build;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
@@ -13,6 +14,7 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 
 import com.winlator.cmod.R;
+import com.winlator.cmod.container.Container;
 import com.winlator.cmod.contents.AdrenotoolsManager;
 import com.winlator.cmod.contents.ContentsManager;
 import com.winlator.cmod.core.AppUtils;
@@ -273,6 +275,18 @@ public class GraphicsDriverConfigDialog extends ContentDialog {
         
         // Populate the spinner with available versions from ContentsManager and pre-select the initial version
         populateGraphicsDriverVersions(anchor.getContext(), contentsManager, vulkanVersion, initialVersion, blExtensions, gpuName, maxDeviceMemory, presentMode, resourceType, graphicsDriver);
+
+        // PanVK ignores the wrapper/adrenotools settings; hide them with their labels (the TextView just before each).
+        // Their values are still written back unchanged, so switching back to a wrapper keeps them.
+        if (Container.isPanVK(graphicsDriver)) {
+            for (View v : new View[]{sVulkanVersion, sVersion, mscAvailableExtensions, sGPUName, sMaxDeviceMemory, sResourceType}) {
+                ViewGroup parent = (ViewGroup) v.getParent();
+                int index = parent.indexOfChild(v);
+                if (index > 0) parent.getChildAt(index - 1).setVisibility(View.GONE);
+                v.setVisibility(View.GONE);
+            }
+            cbDisablePresentWait.setVisibility(View.GONE);
+        }
 
         setOnConfirmCallback(() -> {
             blacklistedExtensions = mscAvailableExtensions.getUnSelectedItemsAsString();
