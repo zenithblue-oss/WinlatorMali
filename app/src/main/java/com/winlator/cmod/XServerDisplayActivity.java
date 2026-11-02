@@ -2397,7 +2397,12 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
             envVars.put("VK_LOADER_LAYERS_DISABLE", "~implicit~");
             // As PanPlay: keep 32-bit DXVK pipeline libraries (else 1-1.6 s recompiles on dxvk-cs at first draw),
             // and keep compiled shaders across sessions in Mesa's disk cache (off by default on Android).
-            envVars.put("DXVK_CONFIG", "dxvk.trackPipelineLifetime = False");
+            // Unity and Fallout 4 size their texture budget from the DXGI VRAM (5+ GB shared here) while the device heap
+            // is ~2.4 GB: cap what DXGI reports, as PanPlay does.
+            File exe = shortcut != null ? shortcut.resolveExeFile() : null;
+            boolean fo4 = exe != null && (exe.getName().equalsIgnoreCase("Fallout4.exe") || exe.getName().equalsIgnoreCase("Fallout4Launcher.exe"));
+            boolean unity = exe != null && new File(exe.getParentFile(), "UnityPlayer.dll").exists();
+            envVars.put("DXVK_CONFIG", "dxvk.trackPipelineLifetime = False" + (unity || fo4 ? "; dxgi.maxDeviceMemory = 2048; dxgi.maxSharedMemory = 1024" : "") + (fo4 ? "; dxvk.numCompilerThreads = 2" : ""));
             envVars.put("MESA_SHADER_CACHE_DIR", rootDir + "/" + ImageFs.CACHE_PATH);
             envVars.put("MESA_SHADER_CACHE_DISABLE", "false");
             envVars.put("MESA_SHADER_CACHE_MAX_SIZE", "1G");
