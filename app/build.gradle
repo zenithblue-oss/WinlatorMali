@@ -192,7 +192,7 @@ android {
         }
     }
 
-    // If you want to be sure modern JNI packaging is used:
+    // Legacy (compressed, extracted) JNI packaging: code copies libs out of nativeLibraryDir. 16 KB-safe: zipalign -P 16 only checks stored libs.
     packagingOptions {
         jniLibs {
             useLegacyPackaging = true
@@ -220,7 +220,7 @@ dependencies {
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
     implementation 'com.squareup.okhttp3:okhttp:4.9.3'
     implementation 'com.google.code.gson:gson:2.8.8'
-    implementation 'org.conscrypt:conscrypt-android:2.5.2'
+    implementation 'org.conscrypt:conscrypt-android:2.5.3' // 2.5.3: 16 KB-aligned libconscrypt_jni.so
     implementation 'org.bouncycastle:bcprov-jdk15on:1.68'
     implementation 'org.openjsse:openjsse:1.1.7'
     implementation 'androidx.core:core:1.0.1'
