@@ -379,9 +379,12 @@ public class WineDownloader {
                 });
 
                 ContentsManager contentsManager = new ContentsManager(activity);
-                contentsManager.extraContentFile(Uri.fromFile(wcpFile), new ContentsManager.OnInstallFinishedCallback() {
+                // Own staging dir per download: the shared cache/contents_tmp is wiped by any concurrent install.
+                File stagingDir = new File(activity.getCacheDir(), "contents_tmp_" + System.nanoTime());
+                contentsManager.extraContentFile(Uri.fromFile(wcpFile), stagingDir, new ContentsManager.OnInstallFinishedCallback() {
                     @Override
                     public void onFailed(ContentsManager.InstallFailedReason reason, Exception e) {
+                        FileUtils.delete(stagingDir);
                         FileUtils.delete(finalWcpFile);
                         if (finalSavedPatternFile != null) FileUtils.delete(finalSavedPatternFile);
                         activity.runOnUiThread(() -> {
@@ -392,9 +395,10 @@ public class WineDownloader {
 
                     @Override
                     public void onSucceed(ContentProfile profile) {
-                        contentsManager.finishInstallContent(profile, new ContentsManager.OnInstallFinishedCallback() {
+                        contentsManager.finishInstallContent(profile, stagingDir, new ContentsManager.OnInstallFinishedCallback() {
                             @Override
                             public void onFailed(ContentsManager.InstallFailedReason reason, Exception e) {
+                                FileUtils.delete(stagingDir);
                                 FileUtils.delete(finalWcpFile);
                                 if (finalSavedPatternFile != null) FileUtils.delete(finalSavedPatternFile);
                                 activity.runOnUiThread(() -> {
