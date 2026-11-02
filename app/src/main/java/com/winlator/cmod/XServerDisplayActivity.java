@@ -2406,6 +2406,15 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
             envVars.put("MESA_SHADER_CACHE_DIR", rootDir + "/" + ImageFs.CACHE_PATH);
             envVars.put("MESA_SHADER_CACHE_DISABLE", "false");
             envVars.put("MESA_SHADER_CACHE_MAX_SIZE", "1G");
+            // OpenGL as PanPlay: Wine's winex11 EGL backend (UseEGL, set in applyWineModeEmulation) loads Mesa EGL + Zink
+            // on PanVK from usr/lib/mesa-zink (appended to LD_LIBRARY_PATH by the launcher). Gladio stays for other drivers.
+            TarCompressorUtils.extract(TarCompressorUtils.Type.ZSTD, this, "graphics_driver/mesa-zink.tzst", rootDir);
+            envVars.put("LIBGL_DRIVERS_PATH", rootDir + "/usr/lib/mesa-zink/dri");
+            envVars.put("MESA_LOADER_DRIVER_OVERRIDE", "zink");
+            envVars.put("GALLIUM_DRIVER", "zink");
+            // No DRI3 in our X server: without this Mesa EGL drops kopper for a swrast PutImage path that shows nothing.
+            envVars.put("LIBGL_KOPPER_DRI2", "1");
+            envVars.put("WINE_USE_EGL", "1");
             return;
         }
 
@@ -2850,6 +2859,9 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
                 registryEditor.removeValue(x11DriverKey, "EmulateModelist");
                 registryEditor.removeValue(x11DriverKey, "EmulateModeset");
             }
+            // PanVK: OpenGL through winex11's EGL backend (Mesa Zink), see extractGraphicsDriverFiles.
+            if (Container.isPanVK(graphicsDriver)) registryEditor.setStringValue(x11DriverKey, "UseEGL", "Y");
+            else registryEditor.removeValue(x11DriverKey, "UseEGL");
         }
         Log.d("XServerDisplayActivity", "Wine mode emulation " + (xrandrCapable ? "enabled" : "skipped (Wine has no XRandR)"));
     }

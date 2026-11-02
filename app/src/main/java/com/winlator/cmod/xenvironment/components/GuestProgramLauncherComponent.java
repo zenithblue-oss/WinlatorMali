@@ -498,6 +498,9 @@ public class GuestProgramLauncherComponent extends EnvironmentComponent {
             for (String name : execEnvVars) if (name.startsWith("WRAPPER_")) wrapperVars.add(name);
             for (String name : wrapperVars) execEnvVars.remove(name);
             execEnvVars.remove("VK_INSTANCE_LAYERS");
+            // Mesa EGL + Zink for OpenGL (see XServerDisplayActivity); last, so imagefs libs keep priority.
+            execEnvVars.put("LD_LIBRARY_PATH", execEnvVars.get("LD_LIBRARY_PATH") + ":" + rootDir.getPath() + "/usr/lib/mesa-zink");
+            execEnvVars.remove("WINE_X11FORCEGLX");
         }
 
         String emulator = container.getEmulator();
