@@ -94,7 +94,7 @@ android {
         targetSdkVersion 28
 
         versionCode 23
-        versionName "1.2.1 Bionic"
+        versionName "1.2.1-panvk1"
 
         // External native build from Winlator
         externalNativeBuild {
@@ -120,9 +120,20 @@ android {
     signingConfigs {
         release {
             def props = new Properties()
-            def localPropertiesFile = project.rootProject.file('local.properties')
-            if (localPropertiesFile.exists()) {
-                localPropertiesFile.withInputStream { props.load(it) }
+            // PanVK release key lives outside the repo: -Ppanvk.signing.properties=<file> (or ~/.gradle/gradle.properties) or env PANVK_SIGNING_PROPERTIES
+            def panvkPath = project.findProperty('panvk.signing.properties') ?: System.getenv('PANVK_SIGNING_PROPERTIES')
+            def panvkFile = panvkPath ? file(panvkPath) : null
+            if (panvkFile?.exists()) {
+                panvkFile.withInputStream { props.load(it) }
+                props['keystore.file'] = props['storeFile']
+                props['keystore.password'] = props['storePassword']
+                props['key.alias'] = props['keyAlias']
+                props['key.password'] = props['keyPassword']
+            } else {
+                def localPropertiesFile = project.rootProject.file('local.properties')
+                if (localPropertiesFile.exists()) {
+                    localPropertiesFile.withInputStream { props.load(it) }
+                }
             }
 
             def keyFile = props['keystore.file'] ? file(props['keystore.file']) : file("${rootDir}/keystore/release.jks")
@@ -131,7 +142,7 @@ android {
                 storePassword props['keystore.password'] ?: "android"
                 keyAlias props['key.alias'] ?: "winlator_mali"
                 keyPassword props['key.password'] ?: "android"
-                
+
                 enableV1Signing true
                 enableV2Signing true
                 enableV3Signing true
@@ -142,16 +153,12 @@ android {
     // Keep Winlator’s buildTypes
     buildTypes {
         debug {
-            // Installs beside the release build (own data, own provider authorities)
-            applicationIdSuffix ".panvk"
-            resValue "string", "app_name", "Winlator PanVK"
             minifyEnabled false
             signingConfig signingConfigs.debug
         }
         release {
             minifyEnabled false
-            def releaseKeyFile = project.rootProject.file('keystore/release.jks')
-            if (releaseKeyFile.exists()) {
+            if (signingConfigs.release.storeFile != null) {
                 signingConfig signingConfigs.release
             } else {
                 signingConfig signingConfigs.debug
@@ -168,8 +175,9 @@ android {
     productFlavors {
         standard {
             dimension "version"
-            applicationId "com.winlator.mali"
-            resValue "string", "app_name", "Winlator Mali"
+            // Installs beside com.winlator.mali / com.winlator (own data, own provider authorities)
+            applicationId "com.winlator.mali.panvk"
+            resValue "string", "app_name", "Winlator PanVK"
         }
         ludashi {
             dimension "version"
