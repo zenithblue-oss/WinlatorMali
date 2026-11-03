@@ -2,11 +2,13 @@ package com.winlator.cmod.xserver.extensions;
 
 import static com.winlator.cmod.xserver.XClientRequestHandler.RESPONSE_CODE_SUCCESS;
 
+import com.winlator.cmod.xconnector.XConnectorEpoll;
 import com.winlator.cmod.xconnector.XInputStream;
 import com.winlator.cmod.xconnector.XOutputStream;
 import com.winlator.cmod.xconnector.XStreamLock;
 import com.winlator.cmod.xserver.Drawable;
 import com.winlator.cmod.xserver.GraphicsContext;
+import com.winlator.cmod.xserver.SHMSegmentManager;
 import com.winlator.cmod.xserver.XClient;
 import com.winlator.cmod.xserver.XLock;
 import com.winlator.cmod.xserver.XServer;
@@ -14,6 +16,7 @@ import com.winlator.cmod.xserver.errors.BadDrawable;
 import com.winlator.cmod.xserver.errors.BadGraphicsContext;
 import com.winlator.cmod.xserver.errors.BadImplementation;
 import com.winlator.cmod.xserver.errors.BadSHMSegment;
+import com.winlator.cmod.xserver.errors.BadValue;
 import com.winlator.cmod.xserver.errors.XRequestError;
 
 import java.io.IOException;
@@ -27,6 +30,7 @@ public class MITSHMExtension implements Extension {
         private static final byte ATTACH = 1;
         private static final byte DETACH = 2;
         private static final byte PUT_IMAGE = 3;
+        private static final byte ATTACH_FD = 6;
     }
 
     @Override
@@ -56,7 +60,7 @@ public class MITSHMExtension implements Extension {
             outputStream.writeShort(client.getSequenceNumber());
             outputStream.writeInt(0);
             outputStream.writeShort((short)1);
-            outputStream.writeShort((short)1);
+            outputStream.writeShort((short)2); // 1.2: AttachFd (memfd, no SysV shm needed); PanVK's sw WSI presents through it
             outputStream.writeShort((short)0);
             outputStream.writeShort((short)0);
             outputStream.writeByte((byte)0);
@@ -68,11 +72,27 @@ public class MITSHMExtension implements Extension {
         int xid = inputStream.readInt();
         int shmid = inputStream.readInt();
         inputStream.skip(4);
-        client.xServer.getSHMSegmentManager().attach(xid, shmid);
+        client.xServer.getSHMSegmentManager().attach(client, xid, shmid);
+    }
+
+    private static void attachFd(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
+        int xid = inputStream.readInt();
+        inputStream.skip(4); // read_only (always mapped read-only) + pad
+        int fd = inputStream.getAncillaryFd();
+        SHMSegmentManager manager = client.xServer.getSHMSegmentManager();
+        if (fd < 0) throw new BadSHMSegment(xid);
+        if (manager == null) {
+            XConnectorEpoll.closeFd(fd);
+            throw new BadSHMSegment(xid);
+        }
+        manager.attachFd(client, xid, fd); // throws BadAlloc over the per-client cap
     }
 
     private static void detach(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
-        client.xServer.getSHMSegmentManager().detach(inputStream.readInt());
+        SHMSegmentManager manager = client.xServer.getSHMSegmentManager();
+        int xid = inputStream.readInt();
+        if (!manager.isOwner(client, xid)) return; // never detach another client's segment
+        manager.detach(xid);
     }
 
     private static void putImage(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
@@ -89,7 +109,7 @@ public class MITSHMExtension implements Extension {
         byte depth = inputStream.readByte();
         inputStream.skip(3);
         int shmseg = inputStream.readInt();
-        inputStream.skip(4);
+        long offset = inputStream.readInt() & 0xFFFFFFFFL;
 
         Drawable drawable = client.xServer.drawableManager.getDrawable(drawableId);
         if (drawable == null) throw new BadDrawable(drawableId);
@@ -98,10 +118,22 @@ public class MITSHMExtension implements Extension {
         if (graphicsContext == null) throw new BadGraphicsContext(gcId);
 
         ByteBuffer data = client.xServer.getSHMSegmentManager().getData(shmseg);
-        if (data == null) throw new BadSHMSegment(shmseg);
+        if (data == null || !client.xServer.getSHMSegmentManager().isOwner(client, shmseg)) throw new BadSHMSegment(shmseg);
 
         if (graphicsContext.getFunction() != GraphicsContext.Function.COPY) {
             throw new UnsupportedOperationException("GC Function other than COPY is not supported.");
+        }
+
+        // 64-bit math: offset is a client-controlled uint32; the image must lie fully inside the segment.
+        long tw = totalWidth & 0xFFFFL, th = totalHeight & 0xFFFFL;
+        long sx = srcX & 0xFFFFL, sy = srcY & 0xFFFFL, sw = srcWidth & 0xFFFFL, sh = srcHeight & 0xFFFFL;
+        if (sx + sw > tw || sy + sh > th) throw new BadValue(srcX);
+        long imageSize = depth == 1 ? ((tw + 31) / 32 * 4) * th : tw * th * 4;
+        if (offset + imageSize > data.capacity()) throw new BadValue((int)offset);
+        if (offset != 0) {
+            data = data.duplicate();
+            data.position((int)offset);
+            data = data.slice().order(data.order());
         }
 
         drawable.drawImage(srcX, srcY, dstX, dstY, srcWidth, srcHeight, depth, data, totalWidth, totalHeight);
@@ -117,6 +149,11 @@ public class MITSHMExtension implements Extension {
             case ClientOpcodes.ATTACH :
                 try (XLock lock = client.xServer.lock(XServer.Lockable.SHMSEGMENT_MANAGER)) {
                     attach(client, inputStream, outputStream);
+                }
+                break;
+            case ClientOpcodes.ATTACH_FD :
+                try (XLock lock = client.xServer.lock(XServer.Lockable.SHMSEGMENT_MANAGER)) {
+                    attachFd(client, inputStream, outputStream);
                 }
                 break;
             case ClientOpcodes.DETACH :
